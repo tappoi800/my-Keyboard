@@ -36,3 +36,18 @@ xcuserdata/
 **/xcshareddata/WorkspaceSettings.xcsettings
 
 # End of https://www.toptal.com/developers/gitignore/api/xcode
+
+# Signing credentials and build outputs (never commit)
+*.ipa
+*.p12
+*.p8
+*.cer
+*.mobileprovision
+*.certSigningRequest
+.env
+.env.*
+private_keys/
+ExportOptions.plist
+*.xcarchive
+DerivedData/
+TestResults/
