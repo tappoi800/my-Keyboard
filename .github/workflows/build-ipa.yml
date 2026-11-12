@@ -1,0 +1,91 @@
+name: Build unsigned IPA
+
+# 署名なしの .ipa を作って artifact として出力します。
+# 署名とインストールは、手元の PC で Sideloadly が行います(Apple ID は GitHub に渡しません)。
+# このワークフローは secrets を使いません。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build unsigned IPA
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Pull Git LFS files in submodules
+        run: |
+          git lfs install --local
+          git submodule foreach --recursive 'git lfs pull'
+
+      - name: Verify model files are real files (not LFS pointers)
+        run: |
+          ls -l zenz-v3.2-*-gguf/*.gguf
+          for f in zenz-v3.2-*-gguf/*.gguf; do
+            size=$(stat -f%z "$f")
+            if [ "$size" -lt 1000000 ]; then
+              echo "::error::$f is too small ($size bytes); LFS content was not fetched"
+              exit 1
+            fi
+          done
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.3"
+
+      - name: Cache DerivedData
+        uses: actions/cache@v5
+        with:
+          path: build/DerivedData
+          key: ${{ runner.os }}-${{ runner.arch }}-xcode-26.3-derived-data-${{ hashFiles('**/project.pbxproj', '**/Package.swift', '**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-xcode-26.3-derived-data-
+
+      - name: Build (unsigned)
+        run: |
+          xcodebuild build -project azooKey.xcodeproj \
+                     -scheme MainApp \
+                     -sdk iphoneos \
+                     -configuration Release \
+                     -derivedDataPath build/DerivedData \
+                     CODE_SIGNING_ALLOWED=NO \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGN_IDENTITY=""
+
+      - name: Package .ipa
+        run: |
+          APP=$(find build/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' | head -n 1)
+          test -d "$APP" || { echo "::error::.app not found"; exit 1; }
+          echo "app: $APP"
+          ls "$APP/PlugIns"
+          test -d "$APP/PlugIns/Keyboard.appex" || { echo "::error::Keyboard.appex is not embedded"; exit 1; }
+          mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          (cd build/ipa && zip -qry ../my-Keyboard-unsigned.ipa Payload)
+          ls -l build/my-Keyboard-unsigned.ipa
+
+      - name: Upload .ipa
+        uses: actions/upload-artifact@v7
+        with:
+          name: my-Keyboard-unsigned-ipa
+          path: build/my-Keyboard-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
