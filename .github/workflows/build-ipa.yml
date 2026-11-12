@@ -89,3 +89,38 @@ jobs:
           path: build/my-Keyboard-unsigned.ipa
           if-no-files-found: error
           retention-days: 14
+
+  # PR のビルドが終わったら、結果を PR にコメントします(成功でも失敗でも)。
+  # GitHub の通知で自分に届き、Claude Code の Auto-fix が拾えるかを試すためのものです。
+  notify:
+    name: Comment build result on PR
+    needs: build
+    if: ${{ always() && github.event_name == 'pull_request' && needs.build.result != 'cancelled' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      RESULT: ${{ needs.build.result }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Post comment
+        run: |
+          if [ "$RESULT" = "success" ]; then
+            STATUS="✅ ビルド成功"
+            DETAIL="署名なしの .ipa は、実行ページの Artifacts からダウンロードできます。"
+          else
+            STATUS="❌ ビルド失敗(${RESULT})"
+            DETAIL="失敗したログは実行ページから確認できます。"
+          fi
+          SHORT_SHA="${HEAD_SHA:0:7}"
+          gh pr comment "$PR_NUMBER" --body "${STATUS} (${SHORT_SHA})
+
+          ${DETAIL}
+          実行ページ: ${RUN_URL}
+
+          _このコメントは GitHub Actions が自動で投稿しています。_"
