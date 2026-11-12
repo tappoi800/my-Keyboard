@@ -27,7 +27,7 @@ jobs:
           xcode-version: "27.1"
 
       - name: Cache DerivedData
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/Library/Developer/Xcode/DerivedData
           key: ${{ runner.os }}-${{ runner.arch }}-xcode-27.1-derived-data-${{ hashFiles('**/project.pbxproj', '**/Package.swift', '**/Package.resolved') }}
