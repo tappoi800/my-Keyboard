@@ -10,7 +10,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>azooKey</string>
+	<string>my-Keyboard</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -52,7 +52,7 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>DevEn3.azooKey</string>
+			<string>com.tappoi800.my-Keyboard</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>azooKey</string>
