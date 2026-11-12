@@ -12,8 +12,8 @@ import SwiftUtils
 
 public enum SharedStore {
     @MainActor public static let userDefaults = UserDefaults(suiteName: Self.appGroupKey)!
-    public static let bundleName = "DevEn3.azooKey.keyboard"
-    public static let appGroupKey = "group.com.azooKey.keyboard"
+    public static let bundleName = "com.tappoi800.my-Keyboard.keyboard"
+    public static let appGroupKey = "group.com.tappoi800.my-Keyboard"
 
     private static var appVersionString: String? {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
